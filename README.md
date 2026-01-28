@@ -19,7 +19,7 @@ A powerful multi-cursor editing plugin for Neovim, inspired by VSCode's multi-cu
 ```lua
 -- In ~/.config/nvim/lua/plugins/multilinea.lua
 return {
-  "cubanmercury/multilinea.nvim",
+  "amartincodes/multilinea.nvim",
   event = "BufReadPost",
   opts = {
     -- Your configuration here (optional)
@@ -31,7 +31,7 @@ return {
 
 ```lua
 use {
-  "cubanmercury/multilinea.nvim",
+  "amartincodes/multilinea.nvim",
   config = function()
     require("multilinea").setup()
   end
@@ -41,7 +41,7 @@ use {
 ### Using [vim-plug](https://github.com/junegunn/vim-plug)
 
 ```vim
-Plug 'cubanmercury/multilinea.nvim'
+Plug 'amartincodes/multilinea.nvim'
 
 " In your init.vim
 lua << EOF
@@ -224,7 +224,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ```bash
 # Clone the repository
-git clone https://github.com/cubanmercury/multilinea.nvim.git
+git clone https://github.com/amartincodes/multilinea.nvim.git
 cd multilinea.nvim
 
 # Test in Neovim
@@ -248,7 +248,7 @@ Inspired by:
 If you encounter issues or have questions:
 
 1. Check the [documentation](doc/multilinea.txt)
-2. Search [existing issues](https://github.com/cubanmercury/multilinea.nvim/issues)
+2. Search [existing issues](https://github.com/amartincodes/multilinea.nvim/issues)
 3. Create a new issue with:
    - Neovim version (`:version`)
    - Configuration
