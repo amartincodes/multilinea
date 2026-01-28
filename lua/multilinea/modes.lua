@@ -436,7 +436,12 @@ end
 
 --- Handle change operation at all cursors
 ---@param motion string Motion to change
+---@deprecated This function is not used by keymaps. Keymaps use delete + explicit insert mode instead.
+--- Change commands (c*) automatically enter insert mode which conflicts with multi-cursor tracking.
+--- For proper multi-cursor change operations, use: operations.apply_to_all('d' .. motion) + M.enter_insert_mode('i')
 function M.change_at_cursors(motion)
+	-- Note: This uses the old approach which has insert mode conflicts
+	-- Kept for backwards compatibility but not recommended
 	M.handle_normal_mode("c" .. motion)
 	-- Automatically enter insert mode after change
 	if state.is_active() then

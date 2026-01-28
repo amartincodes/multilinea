@@ -282,19 +282,19 @@ function M.enable_multicursor_mode()
     operations.apply_to_all('db')
   end, { desc = 'Delete back word at all cursors' }, true)
 
-  -- Change operations
+  -- Change operations (use delete + insert to avoid insert mode conflicts)
   setup_keymap('n', 'cc', function()
-    operations.apply_to_all('cc')
+    operations.apply_to_all('dd')
     modes.enter_insert_mode('i')
   end, { desc = 'Change line at all cursors' }, true)
 
   setup_keymap('n', 'C', function()
-    operations.apply_to_all('C')
+    operations.apply_to_all('D')
     modes.enter_insert_mode('i')
   end, { desc = 'Change to end of line at all cursors' }, true)
 
   setup_keymap('n', 'cw', function()
-    operations.apply_to_all('cw')
+    operations.apply_to_all('dw')
     modes.enter_insert_mode('i')
   end, { desc = 'Change word at all cursors' }, true)
 
@@ -341,29 +341,29 @@ function M.enable_multicursor_mode()
     operations.apply_to_all('X')
   end, { desc = 'Delete character before cursor at all cursors' }, true)
 
-  -- Additional change operations
+  -- Additional change operations (use delete + insert to avoid insert mode conflicts)
   setup_keymap('n', 'ce', function()
-    operations.apply_to_all('ce')
+    operations.apply_to_all('de')
     modes.enter_insert_mode('i')
   end, { desc = 'Change to end of word at all cursors' }, true)
 
   setup_keymap('n', 'cE', function()
-    operations.apply_to_all('cE')
+    operations.apply_to_all('dE')
     modes.enter_insert_mode('i')
   end, { desc = 'Change to end of WORD at all cursors' }, true)
 
   setup_keymap('n', 'cb', function()
-    operations.apply_to_all('cb')
+    operations.apply_to_all('db')
     modes.enter_insert_mode('i')
   end, { desc = 'Change back word at all cursors' }, true)
 
   setup_keymap('n', 'c0', function()
-    operations.apply_to_all('c0')
+    operations.apply_to_all('d0')
     modes.enter_insert_mode('i')
   end, { desc = 'Change to start of line at all cursors' }, true)
 
   setup_keymap('n', 'c^', function()
-    operations.apply_to_all('c^')
+    operations.apply_to_all('d^')
     modes.enter_insert_mode('i')
   end, { desc = 'Change to first non-blank at all cursors' }, true)
 
