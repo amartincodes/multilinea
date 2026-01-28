@@ -1,0 +1,25 @@
+# Neovim
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Lua
+luac.out
+
+# Testing
+.tests/
+tests/.tests/
+
+# Documentation tags
+doc/tags
+
+# Plugin manager directories
+.lazy/
+.packer_compiled.lua
+
+# Debug logs
+*.log
+
+# Claude artifacts
+.claude/

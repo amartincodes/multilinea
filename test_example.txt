@@ -1,0 +1,89 @@
+Multi-Cursor Test File
+======================
+
+Test 1: Next Match Selection
+-----------------------------
+Place cursor on "test" below and press <C-n> multiple times:
+
+test one
+test twe
+test three
+test four
+test five
+
+Expected: Cursors should appear at each "test"
+
+
+Test 2: All Matches at Once
+----------------------------
+Place cursor on "word" and press <leader>ma:
+
+word alpha
+word beta
+word gamma
+word delta
+word epsilon
+
+Expected: All "word" occurrences should have cursors
+
+
+Test 3: Vertical Cursors
+-------------------------
+Place cursor at start of a line below and press <M-j> multiple times:
+
+Line 1
+Line 2
+Line 3
+Line 4
+Line 5
+
+Expected: Vertical column of cursors
+
+
+Test 4: Editing Example
+------------------------
+Select all "foo" with <leader>ma and change to "bar":
+
+foo is here
+The foo variable
+foo = 123
+return foo
+process(foo)
+
+Expected: All "foo" become "bar" simultaneously
+
+
+Test 5: Column Alignment
+-------------------------
+Add vertical cursors and use I to insert:
+
+apple
+banana
+cherry
+date
+elderberry
+
+Expected: Can add text at start of each line
+
+
+Practice Area
+-------------
+Use this space to practice multi-cursor editing:
+
+variable_name = value
+variable_name = value
+variable_name = value
+variable_name = value
+
+hello world hello world
+hello world hello world
+hello world hello world
+
+Quick tips:
+- <C-n> = Add cursor at next match
+- <leader>ma = Add all matches
+- <M-j> = Add cursor below
+- <M-k> = Add cursor above
+- <Esc> = Clear all cursors
+- i/a/I/A = Enter insert mode at all cursors
+- ciw/dw/etc = Change/delete at all cursors

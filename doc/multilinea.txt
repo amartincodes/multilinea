@@ -1,0 +1,373 @@
+*multilinea.txt*  Multi-cursor editing for Neovim
+
+==============================================================================
+CONTENTS                                                  *multilinea-contents*
+
+1. Introduction .......................................... |multilinea-intro|
+2. Installation ...................................... |multilinea-install|
+3. Usage ................................................ |multilinea-usage|
+4. Configuration ........................................ |multilinea-config|
+5. Commands ........................................... |multilinea-commands|
+6. API .................................................... |multilinea-api|
+7. Highlights ....................................... |multilinea-highlights|
+8. FAQ .................................................... |multilinea-faq|
+9. License ............................................ |multilinea-license|
+
+==============================================================================
+1. INTRODUCTION                                             *multilinea-intro*
+
+Multilinea is a multi-cursor editing plugin for Neovim, inspired by VSCode's
+multi-cursor functionality. It allows you to edit multiple locations in your
+buffer simultaneously.
+
+Features:~
+  • VSCode-style cursor addition with <C-n>
+  • Directional cursor addition (above/below)
+  • Add cursors at all word matches
+  • Simultaneous editing at all cursor positions
+  • Visual feedback using Neovim's extmarks API
+  • Pure Lua implementation
+  • LazyVim compatible
+
+==============================================================================
+2. INSTALLATION                                           *multilinea-install*
+
+Using lazy.nvim:~
+>lua
+  return {
+    "cubanmercury/multilinea.nvim",
+    event = "BufReadPost",
+    opts = {},
+  }
+<
+
+Using packer.nvim:~
+>lua
+  use {
+    "cubanmercury/multilinea.nvim",
+    config = function()
+      require("multilinea").setup()
+    end
+  }
+<
+
+Manual setup:~
+>lua
+  require("multilinea").setup({
+    -- Your configuration here
+  })
+<
+
+==============================================================================
+3. USAGE                                                     *multilinea-usage*
+
+Basic Workflow:~
+
+1. Place cursor on a word
+2. Press <C-n> to add cursor at next occurrence
+3. Keep pressing <C-n> to add more cursors
+4. Start editing (i, a, c, d, etc.)
+5. Press <Esc> to clear cursors
+
+Adding Cursors:~
+
+*multilinea-add-next*
+<C-n>           Add cursor at next match of word under cursor (default)
+                Like VSCode's Ctrl-D functionality
+
+*multilinea-add-above*
+<M-k>           Add cursor on the line above (default)
+
+*multilinea-add-below*
+<M-j>           Add cursor on the line below (default)
+
+*multilinea-add-all*
+<leader>ma      Add cursors at all matches of word under cursor (default)
+
+*multilinea-add-here*
+<leader>mc      Add cursor at current position (default)
+
+Managing Cursors:~
+
+*multilinea-remove*
+<M-x>           Remove cursor at current position (default)
+
+*multilinea-clear*
+<Esc>           Clear all cursors (default)
+
+*multilinea-skip*
+<C-k>           Skip current match and find next (default)
+
+Editing with Multiple Cursors:~
+
+Once you have multiple cursors active:
+
+Insert Mode:~
+  i             Enter insert mode at all cursors
+  a             Append after all cursors
+  I             Insert at start of line for all cursors
+  A             Append at end of line for all cursors
+  o             Open line below at all cursors
+  O             Open line above at all cursors
+
+Normal Mode:~
+  Motions       w, b, e, 0, ^, $, etc. work at all cursors
+  Operators     d, c, y, p work at all cursors
+  Deletion      x, dd, D work at all cursors
+
+Example Usage:~
+
+Rename variable:~
+  1. Place cursor on variable name
+  2. Press <C-n> to select next occurrence (or <leader>ma for all)
+  3. Press ciw to change word
+  4. Type new name
+  5. Press <Esc> to apply
+
+Edit multiple lines:~
+  1. Move to first line to edit
+  2. Press <M-j> multiple times to add cursors below
+  3. Press I to insert at start of each line
+  4. Type your text
+  5. Press <Esc> to apply
+
+==============================================================================
+4. CONFIGURATION                                            *multilinea-config*
+
+Default configuration:~
+>lua
+  require("multilinea").setup({
+    keymaps = {
+      add_cursor_next = "<C-n>",
+      add_cursor_below = "<M-j>",
+      add_cursor_above = "<M-k>",
+      add_all_matches = "<leader>ma",
+      remove_cursor = "<M-x>",
+      clear_cursors = "<Esc>",
+      skip_match = "<C-k>",
+      add_cursor_here = "<leader>mc",
+    },
+
+    highlights = {
+      primary = "CursorLine",
+      secondary = "Visual",
+    },
+
+    show_cursor_numbers = false,
+    case_sensitive_search = false,
+    whole_word_match = true,
+  })
+<
+
+Configuration Options:~
+
+*multilinea-config-keymaps*
+keymaps                     Table of keybinding definitions
+  add_cursor_next           Add cursor at next match (default: <C-n>)
+  add_cursor_below          Add cursor below (default: <M-j>)
+  add_cursor_above          Add cursor above (default: <M-k>)
+  add_all_matches           Add all matches (default: <leader>ma)
+  remove_cursor             Remove cursor (default: <M-x>)
+  clear_cursors             Clear all cursors (default: <Esc>)
+  skip_match                Skip match (default: <C-k>)
+  add_cursor_here           Add at position (default: <leader>mc)
+
+*multilinea-config-highlights*
+highlights                  Table of highlight group names
+  primary                   Highlight for primary cursor
+  secondary                 Highlight for secondary cursors
+
+*multilinea-config-behavior*
+show_cursor_numbers         Boolean - Show cursor index numbers
+                           (default: false)
+
+case_sensitive_search       Boolean - Use case-sensitive word matching
+                           (default: false)
+
+whole_word_match           Boolean - Match whole words only
+                           (default: true)
+
+Custom Configuration Example:~
+>lua
+  require("multilinea").setup({
+    keymaps = {
+      add_cursor_next = "<C-d>",      -- Like Sublime Text
+      add_all_matches = "<C-M-l>",
+      clear_cursors = "<leader>mc",
+    },
+    show_cursor_numbers = true,
+    case_sensitive_search = true,
+  })
+<
+
+==============================================================================
+5. COMMANDS                                               *multilinea-commands*
+
+*:MultilineaAddCursor*
+Add a cursor at the current position.
+
+*:MultilineaAddNext*
+Add a cursor at the next match of the word under cursor.
+
+*:MultilineaAddAll*
+Add cursors at all matches of the word under cursor.
+
+*:MultilineaClear*
+Clear all cursors and exit multi-cursor mode.
+
+*:MultilineaAddBelow*
+Add a cursor on the line below current position.
+
+*:MultilineaAddAbove*
+Add a cursor on the line above current position.
+
+==============================================================================
+6. API                                                         *multilinea-api*
+
+Multilinea exposes a public API for use in custom scripts and plugins.
+
+*multilinea.api.add_cursor()*
+Add a cursor at a specific position.
+
+Parameters:~
+  {row}        number  1-indexed row number
+  {col}        number  0-indexed column number
+  {is_primary} boolean Whether this is the primary cursor
+
+Returns:~
+  boolean - true if cursor was added, false otherwise
+
+Example:~
+>lua
+  require("multilinea").api.add_cursor(10, 5, false)
+<
+
+*multilinea.api.remove_cursor()*
+Remove a cursor at a specific position.
+
+Parameters:~
+  {row} number  1-indexed row number
+  {col} number  0-indexed column number
+
+Returns:~
+  boolean - true if cursor was removed, false otherwise
+
+*multilinea.api.clear_all()*
+Clear all cursors and exit multi-cursor mode.
+
+*multilinea.api.get_cursors()*
+Get all cursor positions.
+
+Returns:~
+  table - Array of cursor objects with {row, col, is_primary} fields
+
+Example:~
+>lua
+  local cursors = require("multilinea").api.get_cursors()
+  for i, cursor in ipairs(cursors) do
+    print(string.format("Cursor %d: row=%d, col=%d", i, cursor.row, cursor.col))
+  end
+<
+
+*multilinea.api.is_active()*
+Check if multi-cursor mode is active.
+
+Returns:~
+  boolean - true if active, false otherwise
+
+*multilinea.api.get_count()*
+Get the number of active cursors.
+
+Returns:~
+  number - Count of active cursors
+
+==============================================================================
+7. HIGHLIGHTS                                           *multilinea-highlights*
+
+Multilinea defines the following highlight groups:
+
+*MultilineaPrimary*
+The primary (main) cursor indicator. By default, uses white text on gray
+background.
+
+*MultilineaSecondary*
+Secondary cursor indicators. By default, uses blue text on dark gray
+background.
+
+*MultilineaNumber*
+Cursor index numbers (when show_cursor_numbers is enabled). By default,
+uses yellow text.
+
+You can customize these in your config:~
+>lua
+  vim.api.nvim_set_hl(0, "MultilineaPrimary", {
+    fg = "#ff0000",
+    bg = "#000000",
+    bold = true,
+  })
+<
+
+Or link to existing highlight groups:~
+>vim
+  highlight link MultilineaPrimary Search
+  highlight link MultilineaSecondary IncSearch
+<
+
+==============================================================================
+8. FAQ                                                         *multilinea-faq*
+
+Q: Why aren't my cursors appearing?~
+A: Make sure you've called setup() in your config and that you're using
+   Neovim 0.7 or later. Run :checkhealth multilinea to diagnose issues.
+
+Q: Can I use this with visual mode?~
+A: Visual mode support is planned but not fully implemented yet.
+
+Q: How do I change the cursor appearance?~
+A: Customize the highlight groups (see |multilinea-highlights|) or modify
+   the render.lua file to change cursor characters.
+
+Q: Does this work with macros?~
+A: Macro support per cursor is planned for a future release.
+
+Q: Why does <Esc> clear my cursors?~
+A: This is the default behavior. You can change it in the configuration:
+>lua
+  require("multilinea").setup({
+    keymaps = {
+      clear_cursors = "<leader>mc",  -- Use a different key
+    },
+  })
+<
+
+Q: Can I add cursors using search?~
+A: Currently, cursor addition is based on word under cursor. Pattern-based
+   cursor placement is planned for a future release.
+
+==============================================================================
+9. LICENSE                                                 *multilinea-license*
+
+MIT License
+
+Copyright (c) 2024
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+
+==============================================================================
+vim:tw=78:ts=8:ft=help:norl:
