@@ -80,25 +80,35 @@ function M.enter_insert_mode(insert_type)
 	insert_state.last_line_number = primary.row
 
 	-- For append mode, update all cursor positions to be at col+1 (after current char)
-	-- This keeps secondary cursors in sync with where the primary cursor will be after startinsert!
+	-- This keeps secondary cursors in sync with where the primary cursor will be
 	if insert_type == "a" then
 		local cursors = state.get_cursors()
 		for i, cursor in ipairs(cursors) do
-			local line = vim.api.nvim_buf_get_lines(0, cursor.row - 1, cursor.row, false)[1] or ""
-			local new_col = math.min(cursor.col + 1, #line)
+			local cursor_line = vim.api.nvim_buf_get_lines(0, cursor.row - 1, cursor.row, false)[1] or ""
+			local new_col = math.min(cursor.col + 1, #cursor_line)
 			state.update_cursor(i, cursor.row, new_col)
 		end
-		-- Update primary cursor position tracking after adjustment
-		insert_state.primary_cursor_col = math.min(primary.col + 1, #(vim.api.nvim_buf_get_lines(0, primary.row - 1, primary.row, false)[1] or ""))
+		
+		-- Re-fetch primary cursor after updating to get the NEW position
+		primary = state.get_primary_cursor()
+		
+		-- Update tracking to use the adjusted position
+		insert_state.primary_cursor_col = primary.col
 	end
 
 	-- Enter insert mode at primary cursor
-	vim.api.nvim_win_set_cursor(0, { primary.row, primary.col })
+	-- Note: for append mode, primary.col has already been adjusted to col+1
+	local line_for_cursor = vim.api.nvim_buf_get_lines(0, primary.row - 1, primary.row, false)[1] or ""
 
-	-- Use startinsert! for append mode (inserts after cursor position)
-	if insert_type == "a" then
+	if insert_type == "a" and primary.col >= #line_for_cursor then
+		-- Cursor position is at or past end of line
+		-- In normal mode, cursor cannot be positioned past last char, so use startinsert!
+		-- which enters insert mode at end of line (like Vim's A command)
+		vim.api.nvim_win_set_cursor(0, { primary.row, math.max(0, #line_for_cursor - 1) })
 		vim.cmd("startinsert!")
 	else
+		-- Normal case: set cursor position and use startinsert
+		vim.api.nvim_win_set_cursor(0, { primary.row, primary.col })
 		vim.cmd("startinsert")
 	end
 end
@@ -329,11 +339,9 @@ function M.replicate_insert_changes()
 		local line = vim.api.nvim_buf_get_lines(bufnr, row, row + 1, false)[1] or ""
 
 		if inserted_text ~= "" then
-			-- For append mode, insert AFTER the cursor position
+			-- Insert text at cursor position
+			-- Note: cursor positions were already adjusted in enter_insert_mode() for append mode
 			local insert_col = col
-			if insert_state.insert_type == "a" then
-				insert_col = math.min(col + 1, #line)
-			end
 
 			-- Insert text at cursor position
 			local new_line = line:sub(1, insert_col) .. inserted_text .. line:sub(insert_col + 1)
@@ -342,11 +350,9 @@ function M.replicate_insert_changes()
 			-- Update cursor position
 			state.update_cursor(idx, cursor.row, insert_col + #inserted_text)
 		elseif deleted_count > 0 then
-			-- For append mode, adjust deletion position
+			-- Delete text before cursor position
+			-- Note: cursor positions were already adjusted in enter_insert_mode() for append mode
 			local effective_col = col
-			if insert_state.insert_type == "a" then
-				effective_col = math.min(col + 1, #line)
-			end
 
 			-- Delete text before cursor position
 			local delete_start = math.max(0, effective_col - deleted_count)
