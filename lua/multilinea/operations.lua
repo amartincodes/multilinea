@@ -16,9 +16,9 @@ end
 ---@return table|nil { token: string, row: number, col: number }
 local function get_visual_search_context()
   local mode = vim.fn.mode()
-  if not mode:match('^[vVsS]') then
+  if not mode:match('^[vVsSV]') then
     vim.cmd('normal! \27')
-    vim.notify('Only characterwise visual matching is supported', vim.log.levels.WARN)
+    vim.notify('Unsupported visual mode for matching', vim.log.levels.WARN)
     return nil
   end
 
@@ -30,6 +30,22 @@ local function get_visual_search_context()
   if start_row > end_row or (start_row == end_row and start_col > end_col) then
     start_row, end_row = end_row, start_row
     start_col, end_col = end_col, start_col
+  end
+
+  -- Linewise visual mode: use full selected lines with no trailing newline.
+  if mode:match('^V') then
+    local lines = vim.api.nvim_buf_get_lines(0, start_row - 1, end_row, false)
+    vim.cmd('normal! \27')
+
+    if #lines == 0 then
+      return nil
+    end
+
+    return {
+      token = table.concat(lines, '\n'),
+      row = start_row,
+      col = 0,
+    }
   end
 
   if start_row ~= end_row then
@@ -62,6 +78,108 @@ local function get_visual_search_context()
     row = start_row,
     col = start_col - 1,
   }
+end
+
+---@param lines string[]
+---@return integer[]
+local function build_line_offsets(lines)
+  local offsets = {}
+  local offset = 1
+
+  for i, line in ipairs(lines) do
+    offsets[i] = offset
+    offset = offset + #line
+    if i < #lines then
+      offset = offset + 1
+    end
+  end
+
+  return offsets
+end
+
+---@param abs_col integer 1-based absolute column in joined buffer text
+---@param lines string[]
+---@param line_offsets integer[]
+---@return integer, integer row (1-based), col (0-based)
+local function absolute_to_row_col(abs_col, lines, line_offsets)
+  local row = 1
+  for i = #line_offsets, 1, -1 do
+    if abs_col >= line_offsets[i] then
+      row = i
+      break
+    end
+  end
+
+  local col = abs_col - line_offsets[row]
+  if col < 0 then
+    col = 0
+  end
+
+  return row, col
+end
+
+---@param row integer 1-based row
+---@param col integer 0-based col
+---@param line_offsets integer[]
+---@return integer
+local function row_col_to_absolute(row, col, line_offsets)
+  return line_offsets[row] + col
+end
+
+---@param pattern string
+---@param lines string[]
+---@param case_sensitive boolean
+---@return table[]
+local function find_all_matches_multiline(pattern, lines, case_sensitive)
+  local matches = {}
+  local joined_text = table.concat(lines, '\n')
+  local search_text = case_sensitive and joined_text or joined_text:lower()
+  local search_pattern = case_sensitive and pattern or pattern:lower()
+  local line_offsets = build_line_offsets(lines)
+
+  local pos = 1
+  while pos <= #search_text do
+    local match_start = string.find(search_text, search_pattern, pos, true)
+    if not match_start then
+      break
+    end
+
+    local row, col = absolute_to_row_col(match_start, lines, line_offsets)
+    table.insert(matches, { row = row, col = col })
+    pos = match_start + 1
+  end
+
+  return matches
+end
+
+---@param pattern string
+---@param start_row integer
+---@param start_col integer
+---@param lines string[]
+---@param case_sensitive boolean
+---@return table|nil
+local function find_next_match_multiline(pattern, start_row, start_col, lines, case_sensitive)
+  local joined_text = table.concat(lines, '\n')
+  local search_text = case_sensitive and joined_text or joined_text:lower()
+  local search_pattern = case_sensitive and pattern or pattern:lower()
+  local line_offsets = build_line_offsets(lines)
+  local start_abs = row_col_to_absolute(start_row, start_col, line_offsets)
+
+  local match_start = string.find(search_text, search_pattern, start_abs + 1, true)
+  if match_start then
+    local row, col = absolute_to_row_col(match_start, lines, line_offsets)
+    return { row = row, col = col }
+  end
+
+  if start_abs > 1 then
+    local wrapped_match = string.find(search_text, search_pattern, 1, true)
+    if wrapped_match and wrapped_match < start_abs then
+      local row, col = absolute_to_row_col(wrapped_match, lines, line_offsets)
+      return { row = row, col = col }
+    end
+  end
+
+  return nil
 end
 
 --- Get the literal search token.
@@ -98,6 +216,10 @@ local function find_all_matches(pattern, bufnr, case_sensitive)
 
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
 
+  if pattern:find('\n', 1, true) then
+    return find_all_matches_multiline(pattern, lines, case_sensitive)
+  end
+
   for row, line in ipairs(lines) do
     local search_line = case_sensitive and line or line:lower()
     local search_pattern = case_sensitive and pattern or pattern:lower()
@@ -127,6 +249,10 @@ local function find_next_match(word, start_row, start_col, case_sensitive)
   local bufnr = vim.api.nvim_get_current_buf()
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local total_lines = #lines
+
+  if word:find('\n', 1, true) then
+    return find_next_match_multiline(word, start_row, start_col, lines, case_sensitive)
+  end
 
   -- Build search pattern
   local pattern = word

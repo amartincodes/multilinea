@@ -81,6 +81,17 @@ Now test the multi-cursor features:
    - Press `ciw` and type "everyone"
    - Press `<Esc>` - all instances should change
 
+5. **Test visual selection matching:**
+   - Characterwise: select `hello` with `viw`, then press `<C-n>`
+   - Press `<C-n>` repeatedly - it should keep matching the same selected token
+   - Linewise: use `V` (or `Vj`) and press `<C-n>` / `<leader>ma`
+   - It should match the exact selected line/block (without trailing newline)
+
+6. **Test replace operation:**
+   - Create multiple cursors
+   - Press `r` then type a character (for example `x`)
+   - The character under each cursor should be replaced
+
 ### Step 5: Check Available Commands
 
 ```vim

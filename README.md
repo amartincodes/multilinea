@@ -6,7 +6,7 @@ A powerful multi-cursor editing plugin for Neovim, inspired by VSCode's multi-cu
 
 - 🎯 **VSCode-style cursor addition** - Press `<C-n>` to add cursors at matches
 - ⬆️⬇️ **Directional cursors** - Add cursors above/below current position
-- 🔍 **Literal matching** - Match the char under the cursor or a visual selection anywhere
+- 🔍 **Literal matching** - Match char, visual selection, or linewise visual blocks (`V`)
 - ✏️ **Simultaneous editing** - Type once, edit everywhere
 - 🎨 **Visual feedback** - Clear cursor indicators using Neovim's extmarks
 - ⚡ **Lightweight** - Pure Lua implementation with minimal dependencies
@@ -54,7 +54,7 @@ EOF
 ### Basic Operations
 
 1. **Add cursor at next match** (VSCode-style)
-   - Place cursor on a character, or visually select text
+   - Place cursor on a character, visually select text, or use linewise visual mode (`V`)
    - Press `<C-n>` to add cursor at the next occurrence
    - Keep pressing `<C-n>` to add more cursors
    - Press `<Esc>` to clear all cursors
@@ -65,7 +65,7 @@ EOF
    - Great for editing aligned columns
 
 3. **Add all matches**
-   - Place cursor on a character, or visually select text
+   - Place cursor on a character, visually select text, or use linewise visual mode (`V`)
    - Press `<leader>ma` to add cursors at all occurrences
 
 4. **Manual cursor placement**
@@ -201,7 +201,7 @@ Run `:checkhealth multilinea` to verify your installation.
 | VSCode-style `<C-n>` | ✅ | ✅ | ✅ |
 | LazyVim ready | ✅ | ⚠️ | ⚠️ |
 | Lightweight | ✅ | ❌ | ✅ |
-| Visual mode | 🚧 | ✅ | ✅ |
+| Visual mode | ✅ (charwise + linewise) | ✅ | ✅ |
 
 ## Roadmap
 
@@ -210,7 +210,7 @@ Run `:checkhealth multilinea` to verify your installation.
 - [x] Directional cursor addition
 - [x] Insert mode editing
 - [x] Normal mode operations
-- [ ] Full visual mode support
+- [ ] Blockwise visual mode support (`<C-v>`)
 - [ ] Macro recording per cursor
 - [ ] Advanced selection refinement
 - [ ] Pattern-based cursor placement
