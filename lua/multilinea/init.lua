@@ -7,13 +7,13 @@ local M = {}
 local default_config = {
   -- Keybindings
   keymaps = {
-    add_cursor_next = '<C-n>', -- Add cursor at next word match
-    add_cursor_below = '<M-j>', -- Add cursor below
-    add_cursor_above = '<M-k>', -- Add cursor above
-    add_all_matches = '<leader>ma', -- Add all word matches
+    add_cursor_next = '<C-n>', -- Add cursor at next match
+    add_cursor_below = '<C-j>', -- Add cursor below
+    add_cursor_above = '<C-k>', -- Add cursor above
+    add_all_matches = '<leader>ma', -- Add all matches
     remove_cursor = '<M-x>', -- Remove current cursor
     clear_cursors = '<Esc>', -- Clear all cursors
-    skip_match = '<C-k>', -- Skip current match
+    skip_match = '<leader>ms', -- Skip current match
     add_cursor_here = '<leader>mc', -- Add cursor at current position
   },
 
@@ -25,8 +25,7 @@ local default_config = {
 
   -- Behavior
   show_cursor_numbers = false, -- Show cursor index numbers
-  case_sensitive_search = false, -- Case sensitivity for word matching
-  whole_word_match = true, -- Match whole words only
+  case_sensitive_search = false, -- Case sensitivity for matching
 }
 
 -- Module references
@@ -60,9 +59,6 @@ local function merge_config(user_config)
   end
   if user_config.case_sensitive_search ~= nil then
     config.case_sensitive_search = user_config.case_sensitive_search
-  end
-  if user_config.whole_word_match ~= nil then
-    config.whole_word_match = user_config.whole_word_match
   end
 
   return config

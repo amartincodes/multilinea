@@ -29,7 +29,7 @@ Expected: All "word" occurrences should have cursors
 
 Test 3: Vertical Cursors
 -------------------------
-Place cursor at start of a line below and press <M-j> multiple times:
+Place cursor at start of a line below and press <C-j> multiple times:
 
 Line 1
 Line 2
@@ -82,8 +82,9 @@ hello world hello world
 Quick tips:
 - <C-n> = Add cursor at next match
 - <leader>ma = Add all matches
-- <M-j> = Add cursor below
-- <M-k> = Add cursor above
+- <C-j> = Add cursor below
+- <C-k> = Add cursor above
 - <Esc> = Clear all cursors
 - i/a/I/A = Enter insert mode at all cursors
+- r<char> = Replace character at all cursors
 - ciw/dw/etc = Change/delete at all cursors

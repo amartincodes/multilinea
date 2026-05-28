@@ -56,6 +56,10 @@ function M.setup(config)
     setup_keymap('n', keymaps.add_cursor_next, function()
       operations.add_cursor_next()
     end, { desc = 'Add cursor at next match' })
+
+    setup_keymap('x', keymaps.add_cursor_next, function()
+      operations.add_cursor_next_visual()
+    end, { desc = 'Add cursor at next match (visual selection)' })
   end
 
   -- Add cursor below
@@ -77,6 +81,10 @@ function M.setup(config)
     setup_keymap('n', keymaps.add_all_matches, function()
       operations.add_all_matches()
     end, { desc = 'Add cursors at all matches' })
+
+    setup_keymap('x', keymaps.add_all_matches, function()
+      operations.add_all_matches_visual()
+    end, { desc = 'Add cursors at all matches (visual selection)' })
   end
 
   -- Remove cursor at current position
@@ -265,6 +273,16 @@ function M.enable_multicursor_mode()
   setup_keymap('n', 'x', function()
     operations.apply_to_all('x')
   end, { desc = 'Delete character at all cursors' }, true)
+
+  setup_keymap('n', 'r', function()
+    local ok, replace_char = pcall(vim.fn.getcharstr)
+    if not ok or not replace_char or replace_char == '' or replace_char == '\27' then
+      return
+    end
+
+    local escaped_char = vim.fn.escape(replace_char, '\\|')
+    operations.apply_to_all('r' .. escaped_char)
+  end, { desc = 'Replace character at all cursors' }, true)
 
   setup_keymap('n', 'dd', function()
     operations.apply_to_all('dd')

@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Multilinea.nvim is a multi-cursor editing plugin for Neovim (0.7+) written in pure Lua. It provides VSCode-style multi-cursor functionality with support for word matching, vertical cursor addition, and simultaneous editing.
+Multilinea.nvim is a multi-cursor editing plugin for Neovim (0.7+) written in pure Lua. It provides VSCode-style multi-cursor functionality with support for literal token matching, vertical cursor addition, and simultaneous editing.
 
 ## Development Commands
 
@@ -33,7 +33,7 @@ return {
 
 - **init.lua** - Entry point, setup function, config merging, public API, autocmds
 - **state.lua** - Cursor state management, position tracking, namespace creation
-- **operations.lua** - Core cursor operations (add/remove/find matches, word detection)
+- **operations.lua** - Core cursor operations (add/remove/find matches, token detection)
 - **render.lua** - Visual rendering using Neovim's extmarks API
 - **keymaps.lua** - Keybinding setup, user command definitions
 - **modes.lua** - Mode-specific handling (normal, insert, visual modes)
@@ -64,13 +64,19 @@ get_count()
 
 | Key | Action |
 |-----|--------|
-| `<C-n>` | Add cursor at next word match |
-| `<M-j>` / `<M-k>` | Add cursor below/above |
+| `<C-n>` | Add cursor at next match (single char under cursor, or full visual selection) |
+| `<C-j>` / `<C-k>` | Add cursor below/above |
 | `<leader>ma` | Add cursors at all matches |
 | `<leader>mc` | Add cursor at current position |
 | `<M-x>` | Remove current cursor |
-| `<C-k>` | Skip current match |
+| `<leader>ms` | Skip current match |
 | `<Esc>` | Clear all cursors |
+
+`<C-n>` and `<leader>ma` also work in visual mode: with a multi-character
+selection they match the full selected text. Linewise visual mode (`V`) is
+also supported and matches selected lines as an exact block (without a trailing
+newline). Matching is a literal substring search anywhere in the buffer,
+honoring the `case_sensitive_search` option.
 
 ## Code Style
 

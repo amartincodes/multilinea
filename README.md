@@ -4,9 +4,9 @@ A powerful multi-cursor editing plugin for Neovim, inspired by VSCode's multi-cu
 
 ## Features
 
-- 🎯 **VSCode-style cursor addition** - Press `<C-n>` to add cursors at matching words
+- 🎯 **VSCode-style cursor addition** - Press `<C-n>` to add cursors at matches
 - ⬆️⬇️ **Directional cursors** - Add cursors above/below current position
-- 🔍 **Smart word matching** - Add cursors at all occurrences of current word
+- 🔍 **Literal matching** - Match char, visual selection, or linewise visual blocks (`V`)
 - ✏️ **Simultaneous editing** - Type once, edit everywhere
 - 🎨 **Visual feedback** - Clear cursor indicators using Neovim's extmarks
 - ⚡ **Lightweight** - Pure Lua implementation with minimal dependencies
@@ -54,18 +54,18 @@ EOF
 ### Basic Operations
 
 1. **Add cursor at next match** (VSCode-style)
-   - Place cursor on a word
-   - Press `<C-n>` to add cursor at next occurrence
+   - Place cursor on a character, visually select text, or use linewise visual mode (`V`)
+   - Press `<C-n>` to add cursor at the next occurrence
    - Keep pressing `<C-n>` to add more cursors
    - Press `<Esc>` to clear all cursors
 
 2. **Add cursors vertically**
-   - Press `<M-j>` to add cursor below
-   - Press `<M-k>` to add cursor above
+   - Press `<C-j>` to add cursor below
+   - Press `<C-k>` to add cursor above
    - Great for editing aligned columns
 
 3. **Add all matches**
-   - Place cursor on a word
+   - Place cursor on a character, visually select text, or use linewise visual mode (`V`)
    - Press `<leader>ma` to add cursors at all occurrences
 
 4. **Manual cursor placement**
@@ -81,6 +81,7 @@ Once you have multiple cursors:
   - `w`, `b`, `e` - word motions
   - `0`, `^`, `$` - line motions
   - `dd`, `D`, `x` - delete operations
+  - `r{char}` - replace character at all cursors
   - `y`, `p` - yank and paste
 - **Clear cursors**: Press `<Esc>` to exit multi-cursor mode
 
@@ -103,13 +104,13 @@ Once you have multiple cursors:
 require("multilinea").setup({
   -- Keybindings (all customizable)
   keymaps = {
-    add_cursor_next = "<C-n>",      -- Add cursor at next word match
-    add_cursor_below = "<M-j>",      -- Add cursor below
-    add_cursor_above = "<M-k>",      -- Add cursor above
-    add_all_matches = "<leader>ma",  -- Add all word matches
+    add_cursor_next = "<C-n>",      -- Add cursor at next match
+    add_cursor_below = "<C-j>",      -- Add cursor below
+    add_cursor_above = "<C-k>",      -- Add cursor above
+    add_all_matches = "<leader>ma",  -- Add all matches
     remove_cursor = "<M-x>",         -- Remove current cursor
     clear_cursors = "<Esc>",         -- Clear all cursors
-    skip_match = "<C-k>",            -- Skip current match
+    skip_match = "<leader>ms",       -- Skip current match
     add_cursor_here = "<leader>mc",  -- Add cursor at position
   },
 
@@ -121,8 +122,7 @@ require("multilinea").setup({
 
   -- Behavior
   show_cursor_numbers = false,     -- Show cursor index numbers
-  case_sensitive_search = false,   -- Case sensitivity for word matching
-  whole_word_match = true,         -- Match whole words only
+  case_sensitive_search = false,   -- Case sensitivity for matching
 })
 ```
 
@@ -201,16 +201,16 @@ Run `:checkhealth multilinea` to verify your installation.
 | VSCode-style `<C-n>` | ✅ | ✅ | ✅ |
 | LazyVim ready | ✅ | ⚠️ | ⚠️ |
 | Lightweight | ✅ | ❌ | ✅ |
-| Visual mode | 🚧 | ✅ | ✅ |
+| Visual mode | ✅ (charwise + linewise) | ✅ | ✅ |
 
 ## Roadmap
 
 - [x] Basic multi-cursor operations
-- [x] VSCode-style word matching
+- [x] VSCode-style literal matching
 - [x] Directional cursor addition
 - [x] Insert mode editing
 - [x] Normal mode operations
-- [ ] Full visual mode support
+- [ ] Blockwise visual mode support (`<C-v>`)
 - [ ] Macro recording per cursor
 - [ ] Advanced selection refinement
 - [ ] Pattern-based cursor placement

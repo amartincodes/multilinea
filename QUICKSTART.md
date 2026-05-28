@@ -71,7 +71,7 @@ Now test the multi-cursor features:
 
 3. **Test vertical cursors:**
    - Go to first line, column 0
-   - Press `<M-j>` three times (Alt+j)
+   - Press `<C-j>` three times (Ctrl+j)
    - Should add cursors on lines below
    - Press `I` and type ">> "
    - Press `<Esc>` - should add ">> " to start of each line
@@ -80,6 +80,17 @@ Now test the multi-cursor features:
    - Create cursors at multiple "world" occurrences using `<C-n>`
    - Press `ciw` and type "everyone"
    - Press `<Esc>` - all instances should change
+
+5. **Test visual selection matching:**
+   - Characterwise: select `hello` with `viw`, then press `<C-n>`
+   - Press `<C-n>` repeatedly - it should keep matching the same selected token
+   - Linewise: use `V` (or `Vj`) and press `<C-n>` / `<leader>ma`
+   - It should match the exact selected line/block (without trailing newline)
+
+6. **Test replace operation:**
+   - Create multiple cursors
+   - Press `r` then type a character (for example `x`)
+   - The character under each cursor should be replaced
 
 ### Step 5: Check Available Commands
 
@@ -137,7 +148,6 @@ require("multilinea").setup({
 ```lua
 require("multilinea").setup({
   case_sensitive_search = true,
-  whole_word_match = false,
 })
 ```
 
