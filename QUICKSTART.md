@@ -71,7 +71,7 @@ Now test the multi-cursor features:
 
 3. **Test vertical cursors:**
    - Go to first line, column 0
-   - Press `<M-j>` three times (Alt+j)
+   - Press `<C-j>` three times (Ctrl+j)
    - Should add cursors on lines below
    - Press `I` and type ">> "
    - Press `<Esc>` - should add ">> " to start of each line
@@ -137,7 +137,6 @@ require("multilinea").setup({
 ```lua
 require("multilinea").setup({
   case_sensitive_search = true,
-  whole_word_match = false,
 })
 ```
 

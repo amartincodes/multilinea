@@ -64,13 +64,18 @@ get_count()
 
 | Key | Action |
 |-----|--------|
-| `<C-n>` | Add cursor at next word match |
-| `<M-j>` / `<M-k>` | Add cursor below/above |
+| `<C-n>` | Add cursor at next match (single char under cursor, or full visual selection) |
+| `<C-j>` / `<C-k>` | Add cursor below/above |
 | `<leader>ma` | Add cursors at all matches |
 | `<leader>mc` | Add cursor at current position |
 | `<M-x>` | Remove current cursor |
-| `<C-k>` | Skip current match |
+| `<leader>ms` | Skip current match |
 | `<Esc>` | Clear all cursors |
+
+`<C-n>` and `<leader>ma` also work in visual mode: with a multi-character
+selection they match the full selected text. Matching is a literal substring
+search anywhere in the buffer (no whole-word restriction), honoring the
+`case_sensitive_search` option.
 
 ## Code Style
 

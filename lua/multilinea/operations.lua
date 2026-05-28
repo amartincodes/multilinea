@@ -5,37 +5,58 @@ local M = {}
 local state = require('multilinea.state')
 local render = require('multilinea.render')
 
---- Get word under cursor
+--- Get the literal search token.
+--- In visual mode with an active selection, returns the full selected text
+--- (single-line). Otherwise returns the single character under the cursor,
+--- whether it is a word character or a symbol.
 ---@return string|nil
-local function get_word_under_cursor()
-  local word = vim.fn.expand('<cword>')
-  if word and word ~= '' then
-    return word
+local function get_search_token()
+  local mode = vim.fn.mode()
+
+  -- Visual / select mode: use the highlighted text
+  if mode:match('^[vV\22sS\19]') then
+    -- Exit visual mode so the '< and '> marks are set
+    vim.cmd('normal! \27')
+
+    local start_pos = vim.fn.getpos("'<")
+    local end_pos = vim.fn.getpos("'>")
+    local start_row, start_col = start_pos[2], start_pos[3]
+    local end_row, end_col = end_pos[2], end_pos[3]
+
+    -- Only support single-line selections
+    if start_row ~= end_row then
+      return nil
+    end
+
+    local line = vim.api.nvim_buf_get_lines(0, start_row - 1, start_row, false)[1] or ''
+    local text = line:sub(start_col, end_col)
+    if text and text ~= '' then
+      return text
+    end
+    return nil
+  end
+
+  -- Normal mode: single character under the cursor
+  local pos = vim.api.nvim_win_get_cursor(0)
+  local row, col = pos[1], pos[2]
+  local line = vim.api.nvim_buf_get_lines(0, row - 1, row, false)[1] or ''
+  local char = line:sub(col + 1, col + 1)
+  if char and char ~= '' then
+    return char
   end
   return nil
 end
 
---- Find all matches of a pattern in buffer
+--- Find all literal matches of a pattern in buffer (matches anywhere)
 ---@param pattern string Search pattern
 ---@param bufnr number|nil Buffer number
----@param whole_word boolean Whether to match whole words only
 ---@param case_sensitive boolean Whether search is case sensitive
 ---@return table[] Array of {row, col} positions
-local function find_all_matches(pattern, bufnr, whole_word, case_sensitive)
+local function find_all_matches(pattern, bufnr, case_sensitive)
   bufnr = bufnr or vim.api.nvim_get_current_buf()
   local matches = {}
 
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
-
-  -- Helper function to check if match is whole word
-  local function is_whole_word_match(line, match_start, match_end)
-    if not whole_word then
-      return true
-    end
-    local before = match_start == 1 or line:sub(match_start - 1, match_start - 1):match('%W')
-    local after = match_end >= #line or line:sub(match_end + 1, match_end + 1):match('%W')
-    return before and after
-  end
 
   for row, line in ipairs(lines) do
     local search_line = case_sensitive and line or line:lower()
@@ -43,11 +64,9 @@ local function find_all_matches(pattern, bufnr, whole_word, case_sensitive)
     local col = 1
 
     while col <= #search_line do
-      local match_start, match_end = string.find(search_line, search_pattern, col, true)  -- plain text search
+      local match_start = string.find(search_line, search_pattern, col, true)  -- plain text search
       if match_start then
-        if is_whole_word_match(line, match_start, match_end) then
-          table.insert(matches, { row = row, col = match_start - 1 })  -- Convert to 0-indexed column
-        end
+        table.insert(matches, { row = row, col = match_start - 1 })  -- Convert to 0-indexed column
         col = match_start + 1
       else
         break
@@ -58,14 +77,13 @@ local function find_all_matches(pattern, bufnr, whole_word, case_sensitive)
   return matches
 end
 
---- Find next match of word after current position
----@param word string Word to search for
+--- Find next literal match of token after current position (matches anywhere)
+---@param word string Token to search for
 ---@param start_row number Starting row (1-indexed)
 ---@param start_col number Starting column (0-indexed)
----@param whole_word boolean Match whole words only
 ---@param case_sensitive boolean Case sensitive search
 ---@return table|nil Position {row, col} or nil if not found
-local function find_next_match(word, start_row, start_col, whole_word, case_sensitive)
+local function find_next_match(word, start_row, start_col, case_sensitive)
   local bufnr = vim.api.nvim_get_current_buf()
   local lines = vim.api.nvim_buf_get_lines(bufnr, 0, -1, false)
   local total_lines = #lines
@@ -76,34 +94,15 @@ local function find_next_match(word, start_row, start_col, whole_word, case_sens
     pattern = pattern:lower()
   end
 
-  -- Helper function to check if match is whole word
-  local function is_whole_word_match(line, match_start, match_end)
-    if not whole_word then
-      return true
-    end
-
-    local before = match_start == 1 or line:sub(match_start - 1, match_start - 1):match('%W')
-    local after = match_end >= #line or line:sub(match_end + 1, match_end + 1):match('%W')
-    return before and after
-  end
-
   -- Search from start position to end of buffer
   for row = start_row, total_lines do
     local line = lines[row]
     local search_line = case_sensitive and line or line:lower()
     local search_from = (row == start_row) and (start_col + 2) or 1  -- +2 to skip current position
 
-    while search_from <= #search_line do
-      local match_start, match_end = string.find(search_line, pattern, search_from, true)  -- plain search
-
-      if match_start then
-        if is_whole_word_match(line, match_start, match_end) then
-          return { row = row, col = match_start - 1 }  -- Convert to 0-indexed col
-        end
-        search_from = match_start + 1  -- Try next position in line
-      else
-        break  -- No more matches in this line
-      end
+    local match_start = string.find(search_line, pattern, search_from, true)  -- plain search
+    if match_start then
+      return { row = row, col = match_start - 1 }  -- Convert to 0-indexed col
     end
   end
 
@@ -112,8 +111,8 @@ local function find_next_match(word, start_row, start_col, whole_word, case_sens
     local line = lines[row]
     local search_line = case_sensitive and line or line:lower()
 
-    local match_start, match_end = string.find(search_line, pattern, 1, true)
-    if match_start and is_whole_word_match(line, match_start, match_end) then
+    local match_start = string.find(search_line, pattern, 1, true)
+    if match_start then
       return { row = row, col = match_start - 1 }
     end
   end
@@ -123,8 +122,8 @@ local function find_next_match(word, start_row, start_col, whole_word, case_sens
     local line = lines[start_row]
     local search_line = case_sensitive and line or line:lower()
 
-    local match_start, match_end = string.find(search_line, pattern, 1, true)
-    if match_start and match_start - 1 < start_col and is_whole_word_match(line, match_start, match_end) then
+    local match_start = string.find(search_line, pattern, 1, true)
+    if match_start and match_start - 1 < start_col then
       return { row = start_row, col = match_start - 1 }
     end
   end
@@ -154,29 +153,32 @@ function M.add_cursor_at_pos()
   return false
 end
 
---- Add cursor at next word match (VSCode Ctrl-N behavior)
+--- Add cursor at next match (VSCode Ctrl-N behavior).
+--- Matches the single character under the cursor, or the full selection in
+--- visual mode, as a literal substring anywhere in the buffer.
 function M.add_cursor_next()
   local config = state.state.config
-  local whole_word = config.whole_word_match ~= false
   local case_sensitive = config.case_sensitive_search or false
 
-  -- Get word under cursor or at primary cursor
+  -- Get search token under cursor / from selection.
+  -- Capture the token first; in visual mode this also exits visual mode and
+  -- leaves the cursor at the selection so the primary cursor lands correctly.
   local word
   if state.get_cursor_count() == 0 then
-    -- First invocation - add cursor at current position and get word
+    -- First invocation - capture token, then add cursor at current position
+    word = get_search_token()
     M.add_cursor_at_pos()
-    word = get_word_under_cursor()
   else
-    -- Get word from primary cursor
+    -- Get token from primary cursor
     local primary = state.get_primary_cursor()
     if primary then
       vim.api.nvim_win_set_cursor(0, { primary.row, primary.col })
-      word = get_word_under_cursor()
     end
+    word = get_search_token()
   end
 
   if not word or word == '' then
-    vim.notify('No word under cursor', vim.log.levels.WARN)
+    vim.notify('No character under cursor', vim.log.levels.WARN)
     return false
   end
 
@@ -189,7 +191,6 @@ function M.add_cursor_next()
     word,
     last_cursor.row,
     last_cursor.col,
-    whole_word,
     case_sensitive
   )
 
@@ -304,15 +305,16 @@ function M.add_cursor_above()
   return false
 end
 
---- Add cursors at all matches of current word
+--- Add cursors at all matches of current token.
+--- Matches the single character under the cursor, or the full selection in
+--- visual mode, as a literal substring anywhere in the buffer.
 function M.add_all_matches()
   local config = state.state.config
-  local whole_word = config.whole_word_match ~= false
   local case_sensitive = config.case_sensitive_search or false
 
-  local word = get_word_under_cursor()
+  local word = get_search_token()
   if not word or word == '' then
-    vim.notify('No word under cursor', vim.log.levels.WARN)
+    vim.notify('No character under cursor', vim.log.levels.WARN)
     return false
   end
 
@@ -320,7 +322,7 @@ function M.add_all_matches()
   state.clear_all()
 
   -- Find all matches
-  local matches = find_all_matches(word, nil, whole_word, case_sensitive)
+  local matches = find_all_matches(word, nil, case_sensitive)
 
   if #matches == 0 then
     vim.notify('No matches found', vim.log.levels.INFO)
