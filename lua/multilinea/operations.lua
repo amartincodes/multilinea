@@ -11,43 +11,69 @@ local function is_visual_mode()
   return vim.fn.mode():match('^[vV\22sS\19]') ~= nil
 end
 
+--- Get visual selection context for matching.
+--- Supports single-line characterwise visual selections.
+---@return table|nil { token: string, row: number, col: number }
+local function get_visual_search_context()
+  local mode = vim.fn.mode()
+  if not mode:match('^[vVsS]') then
+    vim.cmd('normal! \27')
+    vim.notify('Only characterwise visual matching is supported', vim.log.levels.WARN)
+    return nil
+  end
+
+  local anchor_pos = vim.fn.getpos('v')
+  local cursor_pos = vim.fn.getpos('.')
+  local start_row, start_col = anchor_pos[2], anchor_pos[3]
+  local end_row, end_col = cursor_pos[2], cursor_pos[3]
+
+  if start_row > end_row or (start_row == end_row and start_col > end_col) then
+    start_row, end_row = end_row, start_row
+    start_col, end_col = end_col, start_col
+  end
+
+  if start_row ~= end_row then
+    vim.cmd('normal! \27')
+    vim.notify('Multi-line visual matching is not supported yet', vim.log.levels.WARN)
+    return nil
+  end
+
+  if vim.o.selection == 'exclusive' and end_col > start_col then
+    end_col = end_col - 1
+  end
+
+  if end_col < start_col then
+    vim.cmd('normal! \27')
+    vim.notify('No visual selection', vim.log.levels.WARN)
+    return nil
+  end
+
+  local line = vim.api.nvim_buf_get_lines(0, start_row - 1, start_row, false)[1] or ''
+  local text = line:sub(start_col, end_col)
+
+  vim.cmd('normal! \27')
+
+  if not text or text == '' then
+    return nil
+  end
+
+  return {
+    token = text,
+    row = start_row,
+    col = start_col - 1,
+  }
+end
+
 --- Get the literal search token.
 --- In visual mode with an active selection, returns the full selected text
 --- (single-line). Otherwise returns the single character under the cursor,
 --- whether it is a word character or a symbol.
 ---@return string|nil
 local function get_search_token()
-  local mode = vim.fn.mode()
-
   -- Visual / select mode: use the highlighted text
-  if mode:match('^[vV\22sS\19]') then
-    local anchor_pos = vim.fn.getpos('v')
-    local cursor_pos = vim.fn.getpos('.')
-    local start_row, start_col = anchor_pos[2], anchor_pos[3]
-    local end_row, end_col = cursor_pos[2], cursor_pos[3]
-
-    if start_row > end_row or (start_row == end_row and start_col > end_col) then
-      start_row, end_row = end_row, start_row
-      start_col, end_col = end_col, start_col
-    end
-
-    -- Only support single-line selections
-    if start_row ~= end_row then
-      vim.cmd('normal! \27')
-      vim.notify('Multi-line visual matching is not supported yet', vim.log.levels.WARN)
-      return nil
-    end
-
-    local line = vim.api.nvim_buf_get_lines(0, start_row - 1, start_row, false)[1] or ''
-    local text = line:sub(start_col, end_col)
-
-    -- Exit visual mode after reading live selection bounds
-    vim.cmd('normal! \27')
-
-    if text and text ~= '' then
-      return text
-    end
-    return nil
+  if is_visual_mode() then
+    local context = get_visual_search_context()
+    return context and context.token or nil
   end
 
   -- Normal mode: single character under the cursor
@@ -229,6 +255,55 @@ function M.add_cursor_next()
   end
 end
 
+--- Add cursor at next match from visual selection.
+--- Uses the selected text as token and anchors the primary cursor at
+--- selection start.
+function M.add_cursor_next_visual()
+  local config = state.state.config
+  local case_sensitive = config.case_sensitive_search or false
+  local context = get_visual_search_context()
+
+  if not context or not context.token or context.token == '' then
+    vim.notify('No character under cursor', vim.log.levels.WARN)
+    return false
+  end
+
+  state.set_search_token(context.token)
+
+  if state.get_cursor_count() == 0 then
+    vim.api.nvim_win_set_cursor(0, { context.row, context.col })
+    M.add_cursor_at_pos()
+  end
+
+  local cursors = state.get_cursors()
+  state.sort_cursors()
+
+  local last_cursor = cursors[#cursors]
+  local next_pos = find_next_match(
+    context.token,
+    last_cursor.row,
+    last_cursor.col,
+    case_sensitive
+  )
+
+  if next_pos then
+    local was_active = state.is_active()
+    if state.add_cursor(next_pos.row, next_pos.col, false) then
+      if not was_active and state.is_active() then
+        local keymaps = require('multilinea.keymaps')
+        keymaps.enable_multicursor_mode()
+      end
+      render.update()
+      return true
+    end
+    vim.notify('Cursor already exists at this position', vim.log.levels.INFO)
+    return false
+  end
+
+  vim.notify('No more matches found', vim.log.levels.INFO)
+  return false
+end
+
 --- Add cursor below current position
 function M.add_cursor_below()
   local pos = vim.api.nvim_win_get_cursor(0)
@@ -351,6 +426,41 @@ function M.add_all_matches()
   end
 
   -- Enable multicursor keymaps if we have multiple cursors
+  if state.is_active() then
+    local keymaps = require('multilinea.keymaps')
+    keymaps.enable_multicursor_mode()
+  end
+
+  render.update()
+  vim.notify(string.format('Added %d cursors', #matches), vim.log.levels.INFO)
+  return true
+end
+
+--- Add cursors at all matches from visual selection.
+function M.add_all_matches_visual()
+  local config = state.state.config
+  local case_sensitive = config.case_sensitive_search or false
+  local context = get_visual_search_context()
+
+  if not context or not context.token or context.token == '' then
+    vim.notify('No character under cursor', vim.log.levels.WARN)
+    return false
+  end
+
+  state.clear_all()
+  state.set_search_token(context.token)
+
+  local matches = find_all_matches(context.token, nil, case_sensitive)
+
+  if #matches == 0 then
+    vim.notify('No matches found', vim.log.levels.INFO)
+    return false
+  end
+
+  for i, match in ipairs(matches) do
+    state.add_cursor(match.row, match.col, i == 1)
+  end
+
   if state.is_active() then
     local keymaps = require('multilinea.keymaps')
     keymaps.enable_multicursor_mode()

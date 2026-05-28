@@ -53,9 +53,13 @@ function M.setup(config)
 
   -- Add cursor at next match (VSCode Ctrl-N style)
   if keymaps.add_cursor_next then
-    setup_keymap({ 'n', 'x' }, keymaps.add_cursor_next, function()
+    setup_keymap('n', keymaps.add_cursor_next, function()
       operations.add_cursor_next()
     end, { desc = 'Add cursor at next match' })
+
+    setup_keymap('x', keymaps.add_cursor_next, function()
+      operations.add_cursor_next_visual()
+    end, { desc = 'Add cursor at next match (visual selection)' })
   end
 
   -- Add cursor below
@@ -74,9 +78,13 @@ function M.setup(config)
 
   -- Add cursors at all matches
   if keymaps.add_all_matches then
-    setup_keymap({ 'n', 'x' }, keymaps.add_all_matches, function()
+    setup_keymap('n', keymaps.add_all_matches, function()
       operations.add_all_matches()
     end, { desc = 'Add cursors at all matches' })
+
+    setup_keymap('x', keymaps.add_all_matches, function()
+      operations.add_all_matches_visual()
+    end, { desc = 'Add cursors at all matches (visual selection)' })
   end
 
   -- Remove cursor at current position
