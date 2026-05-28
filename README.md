@@ -81,6 +81,7 @@ Once you have multiple cursors:
   - `w`, `b`, `e` - word motions
   - `0`, `^`, `$` - line motions
   - `dd`, `D`, `x` - delete operations
+  - `r{char}` - replace character at all cursors
   - `y`, `p` - yank and paste
 - **Clear cursors**: Press `<Esc>` to exit multi-cursor mode
 

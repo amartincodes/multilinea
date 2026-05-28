@@ -116,6 +116,7 @@ Normal Mode:~
   Motions       w, b, e, 0, ^, $, etc. work at all cursors
   Operators     d, c, y, p work at all cursors
   Deletion      x, dd, D work at all cursors
+  Replace       r{char} replaces at all cursors
 
 Example Usage:~
 

@@ -266,6 +266,16 @@ function M.enable_multicursor_mode()
     operations.apply_to_all('x')
   end, { desc = 'Delete character at all cursors' }, true)
 
+  setup_keymap('n', 'r', function()
+    local ok, replace_char = pcall(vim.fn.getcharstr)
+    if not ok or not replace_char or replace_char == '' or replace_char == '\27' then
+      return
+    end
+
+    local escaped_char = vim.fn.escape(replace_char, '\\|')
+    operations.apply_to_all('r' .. escaped_char)
+  end, { desc = 'Replace character at all cursors' }, true)
+
   setup_keymap('n', 'dd', function()
     operations.apply_to_all('dd')
   end, { desc = 'Delete line at all cursors' }, true)

@@ -86,4 +86,5 @@ Quick tips:
 - <C-k> = Add cursor above
 - <Esc> = Clear all cursors
 - i/a/I/A = Enter insert mode at all cursors
+- r<char> = Replace character at all cursors
 - ciw/dw/etc = Change/delete at all cursors

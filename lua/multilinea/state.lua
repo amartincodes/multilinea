@@ -11,6 +11,7 @@ M.state = {
   namespace = nil,
   primary_cursor_index = 1,
   insert_mode_input = {},
+  search_token = nil,
   config = {},
 }
 
@@ -115,6 +116,19 @@ function M.clear_all()
   M.state.active = false
   M.state.primary_cursor_index = 1
   M.state.insert_mode_input = {}
+  M.state.search_token = nil
+end
+
+--- Set current search token for iterative matching
+---@param token string|nil
+function M.set_search_token(token)
+  M.state.search_token = token
+end
+
+--- Get current search token for iterative matching
+---@return string|nil
+function M.get_search_token()
+  return M.state.search_token
 end
 
 --- Update cursor position

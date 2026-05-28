@@ -5,6 +5,12 @@ local M = {}
 local state = require('multilinea.state')
 local render = require('multilinea.render')
 
+--- Detect whether current mode is visual/select mode.
+---@return boolean
+local function is_visual_mode()
+  return vim.fn.mode():match('^[vV\22sS\19]') ~= nil
+end
+
 --- Get the literal search token.
 --- In visual mode with an active selection, returns the full selected text
 --- (single-line). Otherwise returns the single character under the cursor,
@@ -15,21 +21,29 @@ local function get_search_token()
 
   -- Visual / select mode: use the highlighted text
   if mode:match('^[vV\22sS\19]') then
-    -- Exit visual mode so the '< and '> marks are set
-    vim.cmd('normal! \27')
+    local anchor_pos = vim.fn.getpos('v')
+    local cursor_pos = vim.fn.getpos('.')
+    local start_row, start_col = anchor_pos[2], anchor_pos[3]
+    local end_row, end_col = cursor_pos[2], cursor_pos[3]
 
-    local start_pos = vim.fn.getpos("'<")
-    local end_pos = vim.fn.getpos("'>")
-    local start_row, start_col = start_pos[2], start_pos[3]
-    local end_row, end_col = end_pos[2], end_pos[3]
+    if start_row > end_row or (start_row == end_row and start_col > end_col) then
+      start_row, end_row = end_row, start_row
+      start_col, end_col = end_col, start_col
+    end
 
     -- Only support single-line selections
     if start_row ~= end_row then
+      vim.cmd('normal! \27')
+      vim.notify('Multi-line visual matching is not supported yet', vim.log.levels.WARN)
       return nil
     end
 
     local line = vim.api.nvim_buf_get_lines(0, start_row - 1, start_row, false)[1] or ''
     local text = line:sub(start_col, end_col)
+
+    -- Exit visual mode after reading live selection bounds
+    vim.cmd('normal! \27')
+
     if text and text ~= '' then
       return text
     end
@@ -159,27 +173,28 @@ end
 function M.add_cursor_next()
   local config = state.state.config
   local case_sensitive = config.case_sensitive_search or false
+  local use_new_token = state.get_cursor_count() == 0 or is_visual_mode()
+  local token = state.get_search_token()
 
-  -- Get search token under cursor / from selection.
-  -- Capture the token first; in visual mode this also exits visual mode and
-  -- leaves the cursor at the selection so the primary cursor lands correctly.
-  local word
-  if state.get_cursor_count() == 0 then
-    -- First invocation - capture token, then add cursor at current position
-    word = get_search_token()
-    M.add_cursor_at_pos()
-  else
-    -- Get token from primary cursor
-    local primary = state.get_primary_cursor()
-    if primary then
-      vim.api.nvim_win_set_cursor(0, { primary.row, primary.col })
+  if use_new_token then
+    token = get_search_token()
+    if not token or token == '' then
+      vim.notify('No character under cursor', vim.log.levels.WARN)
+      return false
     end
-    word = get_search_token()
+    state.set_search_token(token)
+  elseif not token or token == '' then
+    token = get_search_token()
+    if not token or token == '' then
+      vim.notify('No character under cursor', vim.log.levels.WARN)
+      return false
+    end
+    state.set_search_token(token)
   end
 
-  if not word or word == '' then
-    vim.notify('No character under cursor', vim.log.levels.WARN)
-    return false
+  -- First invocation should add the primary cursor after token capture.
+  if state.get_cursor_count() == 0 then
+    M.add_cursor_at_pos()
   end
 
   -- Find last cursor position to search from
@@ -188,7 +203,7 @@ function M.add_cursor_next()
 
   local last_cursor = cursors[#cursors]
   local next_pos = find_next_match(
-    word,
+    token,
     last_cursor.row,
     last_cursor.col,
     case_sensitive
@@ -312,17 +327,18 @@ function M.add_all_matches()
   local config = state.state.config
   local case_sensitive = config.case_sensitive_search or false
 
-  local word = get_search_token()
-  if not word or word == '' then
+  local token = get_search_token()
+  if not token or token == '' then
     vim.notify('No character under cursor', vim.log.levels.WARN)
     return false
   end
 
   -- Clear existing cursors
   state.clear_all()
+  state.set_search_token(token)
 
   -- Find all matches
-  local matches = find_all_matches(word, nil, case_sensitive)
+  local matches = find_all_matches(token, nil, case_sensitive)
 
   if #matches == 0 then
     vim.notify('No matches found', vim.log.levels.INFO)
@@ -365,6 +381,7 @@ function M.clear_all()
   local keymaps = require('multilinea.keymaps')
   keymaps.disable_multicursor_mode()
 
+  state.set_search_token(nil)
   state.clear_all()
   render.clear()
 end
